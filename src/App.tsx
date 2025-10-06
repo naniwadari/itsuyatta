@@ -2,13 +2,24 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import Dexie from 'dexie'
 
-const db = new Dexie('DoTask')
+/** テーブル定義 */
+type DexieDatabase = {[P in keyof Dexie]: Dexie[P]}
+interface Task {
+  id?: number,
+  name: string,
+  latest: Date,
+  history: Array<Date>,
+}
+interface TaskDatabase extends DexieDatabase {
+  tasks: Dexie.Table<Task, number>
+}
 
+const db = new Dexie('Task') as TaskDatabase
 db.version(1).stores({
   tasks: '++id, name, latest, history'
 })
 
-const addTask = async (task) => {
+const addTask = async (task: Task) => {
   try {
     await db.tasks.add(task)
   } catch (error) {
@@ -25,7 +36,7 @@ const getTasks = async () => {
   }
 }
 
-const doneTask = async (id, now) => {
+const doneTask = async (id: number, now: Date) => {
   try {
     const task = await db.tasks.get(id)
     await db.tasks.update(id, { latest: now, history: [...task.history, now] })
@@ -34,7 +45,7 @@ const doneTask = async (id, now) => {
   }
 }
 
-const deleteTask = async (id) => {
+const deleteTask = async (id: number) => {
   try {
     await db.tasks.delete(id)
   } catch (error) {
@@ -75,13 +86,13 @@ function App() {
   }
 
   /** タスク完了時間更新 */
-  async function handleDone(id) {
+  async function handleDone(id: number) {
     await doneTask(id, new Date())
     await updateTasks()
   }
 
   /** タスク削除 */
-  async function handleDelete(id) {
+  async function handleDelete(id: number) {
     await deleteTask(id)
     await updateTasks()
   }
@@ -109,7 +120,7 @@ function App() {
             </div>
             <div className="mt-8">
                 <ul>
-                  { tasks.map((task) => (
+                  { tasks.map((task: Task) => (
                     <li className="p-2 rounded-lg" key={task.id}>
                         <div className="flex align-middle flex-row justify-between">
                             <div className='flex'>
